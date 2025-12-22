@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ReportingPeriod {
+  id          String   @id @default(cuid())
+  label       String   @unique
+  startDate   DateTime
+  endDate     DateTime
+  isFinalised Boolean  @default(false)
+  finalisedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  metrics     Metric[]
+
+  @@index([isFinalised])
+  @@index([startDate])
+}
+
+model Metric {
+  id          String   @id @default(cuid())
+  periodId    String
+  metricNumber Int
+  name        String
+  description String
+  value       Float?
+  unit        String
+  isNA        Boolean  @default(false)
+  hidden      Boolean  @default(false)
+  naReason    String?
+  insight     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  period      ReportingPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  @@unique([periodId, metricNumber])
+  @@index([periodId])
+  @@index([metricNumber])
+}
+
+model ToleranceBand {
+  id             String   @id @default(cuid())
+  metricNumber   Int      @unique
+  greenMin       Float?
+  greenMax       Float?
+  greenOperator  String   // ">=", "<=", "==", "range"
+  amberMin       Float?
+  amberMax       Float?
+  amberOperator  String
+  redMin         Float?
+  redMax         Float?
+  redOperator    String
+  isLowerBetter  Boolean  @default(false)
+  flatTolerance  Float    @default(1.0)
+  updatedAt      DateTime @updatedAt
+
+  @@index([metricNumber])
+}
+
+model DashboardConfig {
+  id        String   @id @default("config")
+  headerText String  @default("Example dashboard – Presented at CORF / TRGC and input to ERC/BRC")
+  updatedAt DateTime @updatedAt
+}
+
