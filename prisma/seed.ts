@@ -124,14 +124,14 @@ async function main() {
 
   // Create 8 months of historical data (May 2024 to December 2024)
   const months = [
-    { label: '2024-05', start: new Date('2024-05-01'), end: new Date('2024-05-31') },
-    { label: '2024-06', start: new Date('2024-06-01'), end: new Date('2024-06-30') },
-    { label: '2024-07', start: new Date('2024-07-01'), end: new Date('2024-07-31') },
-    { label: '2024-08', start: new Date('2024-08-01'), end: new Date('2024-08-31') },
-    { label: '2024-09', start: new Date('2024-09-01'), end: new Date('2024-09-30') },
-    { label: '2024-10', start: new Date('2024-10-01'), end: new Date('2024-10-31') },
-    { label: '2024-11', start: new Date('2024-11-01'), end: new Date('2024-11-30') },
-    { label: '2024-12', start: new Date('2024-12-01'), end: new Date('2024-12-31') },
+    { label: 'May 2024', start: new Date('2024-05-01'), end: new Date('2024-05-31') },
+    { label: 'June 2024', start: new Date('2024-06-01'), end: new Date('2024-06-30') },
+    { label: 'July 2024', start: new Date('2024-07-01'), end: new Date('2024-07-31') },
+    { label: 'August 2024', start: new Date('2024-08-01'), end: new Date('2024-08-31') },
+    { label: 'September 2024', start: new Date('2024-09-01'), end: new Date('2024-09-30') },
+    { label: 'October 2024', start: new Date('2024-10-01'), end: new Date('2024-10-31') },
+    { label: 'November 2024', start: new Date('2024-11-01'), end: new Date('2024-11-30') },
+    { label: 'December 2024', start: new Date('2024-12-01'), end: new Date('2024-12-31') },
   ];
 
   // Generate realistic values with trends

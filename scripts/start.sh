@@ -1,22 +1,25 @@
 #!/bin/sh
 
-# Create data directory if it doesn't exist
-mkdir -p /app/data
+# DATABASE_URL is set via environment variable from docker-compose
 
-# Set database URL
-export DATABASE_URL="file:./data/dev.db"
+# Wait for PostgreSQL to be ready (simple retry loop)
+echo "Waiting for PostgreSQL to be ready..."
+for i in $(seq 1 30); do
+  if PGPASSWORD=ngm_password psql -h postgres -U ngm_user -d ngm_sec_reports -c "SELECT 1" >/dev/null 2>&1; then
+    echo "PostgreSQL is ready!"
+    break
+  fi
+  if [ $i -eq 30 ]; then
+    echo "Warning: PostgreSQL may not be ready, continuing anyway..."
+  else
+    echo "Attempt $i/30..."
+    sleep 2
+  fi
+done
 
-# Wait a moment for filesystem to be ready
-sleep 2
-
-# Run migrations without seeding
-if [ ! -f "/app/data/dev.db" ]; then
-  echo "Database not found, applying schema..."
-  npx prisma migrate deploy 2>&1 || npx prisma db push --skip-generate 2>&1 || echo "Migrations applied or skipped"
-else
-  echo "Database exists, checking migrations..."
-  npx prisma migrate deploy 2>&1 || echo "Migrations up to date"
-fi
+# Run migrations or push schema
+echo "Setting up database schema..."
+npx prisma migrate deploy 2>&1 || npx prisma db push --accept-data-loss --skip-generate 2>&1 || echo "Schema setup completed"
 
 # Start the application
 echo "Starting application..."

@@ -5,6 +5,7 @@ import { ReportingPeriod, Metric } from '@prisma/client';
 import { PeriodSelector } from '@/components/PeriodSelector';
 import { CreatePeriodModal } from '@/components/CreatePeriodModal';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const [periods, setPeriods] = useState<(ReportingPeriod & { metrics: Metric[] })[]>([]);
@@ -44,7 +45,13 @@ export default function DashboardPage() {
     router.push(`/dashboard/${created.id}`);
   };
 
-  const finalisedPeriods = periods.filter(p => p.isFinalised);
+  const finalisedPeriods = periods
+    .filter(p => p.isFinalised)
+    .sort((a, b) => {
+      const aDate = a.startDate instanceof Date ? a.startDate : new Date(a.startDate);
+      const bDate = b.startDate instanceof Date ? b.startDate : new Date(b.startDate);
+      return bDate.getTime() - aDate.getTime(); // Newest first
+    });
 
   if (isLoading) {
     return (
@@ -55,52 +62,65 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-10">
+    <div className="min-h-screen bg-ngm-bg pb-10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-purple-700"
-          >
-            + Create period
-          </button>
-        </div>
-
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
+          <div className="rounded-2xl border border-ngm-border bg-white p-4 sm:p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Draft periods</h2>
                 <p className="text-sm text-gray-600">Resume a saved draft to keep editing.</p>
               </div>
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 transition-colors"
+              >
+                + Create period
+              </button>
             </div>
             <PeriodSelector periods={periods} showResume />
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
+          <div className="rounded-2xl border border-ngm-border bg-white p-4 sm:p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Completed history</h2>
                 <p className="text-sm text-gray-600">Open finalised reports to review or edit.</p>
               </div>
-              <a href="/history" className="text-xs font-semibold text-purple-700 hover:underline">
+              <Link
+                href="/history"
+                className="inline-flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-gray-800 transition-colors"
+              >
                 Open history
-              </a>
+              </Link>
             </div>
-            <div className="space-y-2 max-h-72 overflow-auto pr-1">
-              {finalisedPeriods.map(period => (
-                <a
-                  key={period.id}
-                  href={`/dashboard/${period.id}`}
-                  className="block rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 hover:border-purple-200 hover:shadow-sm"
-                >
-                  <div className="font-semibold">{period.label}</div>
-                </a>
-              ))}
-              {finalisedPeriods.length === 0 && (
-                <div className="text-sm text-gray-500">No finalised periods yet.</div>
-              )}
-            </div>
+            {finalisedPeriods.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center">No finalised periods yet.</div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {finalisedPeriods.map(period => {
+                  const [month, year] = period.label.split(' ');
+                  return (
+                    <div
+                      key={period.id}
+                      className="rounded-xl border border-ngm-border bg-white px-4 py-4 text-center shadow-sm flex flex-col items-center justify-center"
+                    >
+                      <div className="text-base font-semibold text-gray-900">{month}</div>
+                      <div className="text-base font-semibold text-gray-900">{year}</div>
+                      <div className="mt-3 flex justify-center">
+                      <Link
+                        href={`/dashboard/${period.id}`}
+                        prefetch={false}
+                        className="rounded-full bg-slate-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700 transition-colors"
+                      >
+                        View
+                      </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 

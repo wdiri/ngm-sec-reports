@@ -54,7 +54,7 @@ export function CreatePeriodModal({ isOpen, onClose, onSubmit }: CreatePeriodMod
     setIsSubmitting(true);
     try {
       await onSubmit({
-        label: computedLabel || `${year}-${month}`,
+        label: computedLabel || `${monthLabel || 'Month'} ${year}`,
         startDate,
         endDate,
         description: description.trim() || undefined,
@@ -80,7 +80,7 @@ export function CreatePeriodModal({ isOpen, onClose, onSubmit }: CreatePeriodMod
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Period Label (auto)
             </label>
-            <div className="w-full rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+            <div className="w-full rounded-md border border-dashed border-ngm-border bg-gray-50 px-3 py-2 text-sm text-gray-700">
               {computedLabel || 'Select month and year to generate label'}
             </div>
           </div>
@@ -93,7 +93,7 @@ export function CreatePeriodModal({ isOpen, onClose, onSubmit }: CreatePeriodMod
                 id="month"
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-ngm-border rounded-md focus:outline-none focus:ring-2 focus:ring-ngm-accent"
                 required
               >
                 <option value="">Select month</option>
@@ -112,7 +112,7 @@ export function CreatePeriodModal({ isOpen, onClose, onSubmit }: CreatePeriodMod
                 id="year"
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-ngm-border rounded-md focus:outline-none focus:ring-2 focus:ring-ngm-accent"
                 required
               >
                 {years.map((year) => (
@@ -132,7 +132,7 @@ export function CreatePeriodModal({ isOpen, onClose, onSubmit }: CreatePeriodMod
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 border border-ngm-border rounded-md focus:outline-none focus:ring-2 focus:ring-ngm-accent"
             />
           </div>
           {error && (
@@ -142,14 +142,14 @@ export function CreatePeriodModal({ isOpen, onClose, onSubmit }: CreatePeriodMod
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-4 py-2 border border-ngm-border rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ngm-accent"
               disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+              className="px-4 py-2 bg-ngm-cta text-white rounded-md hover:bg-ngm-cta-hover focus:outline-none focus:ring-2 focus:ring-ngm-accent disabled:opacity-50"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Creating...' : 'Create'}

@@ -1,5 +1,6 @@
 import { ReportingPeriod, Metric, ToleranceBand } from '@prisma/client';
 import { Trend, TrendDirection } from '@/types';
+import { CONFIG } from './domain/metrics';
 
 export function calculateTrend(
   metricNumber: number,
@@ -7,7 +8,7 @@ export function calculateTrend(
   historicalPeriods: (ReportingPeriod & { metrics: Metric[] })[],
   toleranceBand: ToleranceBand | null
 ): Trend {
-  // Get last 6 finalised periods (excluding current)
+  // Get last N finalised periods (excluding current)
   const sortedPeriods = historicalPeriods
     .filter(p => p.isFinalised && p.id !== currentPeriod.id)
     .sort((a, b) => {
@@ -15,7 +16,7 @@ export function calculateTrend(
       const bDate = b.startDate instanceof Date ? b.startDate : new Date(b.startDate);
       return bDate.getTime() - aDate.getTime();
     })
-    .slice(0, 6);
+    .slice(0, CONFIG.TREND_HISTORY_PERIODS);
 
   // Extract values for this metric
   const values: number[] = [];

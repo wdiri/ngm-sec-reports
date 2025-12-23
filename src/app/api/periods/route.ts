@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { CreatePeriodInput } from '@/types';
+import { CreatePeriodSchema } from '@/types';
+import { METRIC_DEFINITIONS } from '@/lib/domain/metrics';
 
 export async function GET() {
   try {
@@ -21,8 +22,21 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: CreatePeriodInput = await request.json();
-    const { label, startDate, endDate } = body;
+    const rawBody = await request.json();
+
+    // Validate input with Zod
+    const validationResult = CreatePeriodSchema.safeParse(rawBody);
+    if (!validationResult.success) {
+      return NextResponse.json({
+        error: 'Validation failed',
+        details: validationResult.error.issues.map((issue) => ({
+          field: issue.path.join('.'),
+          message: issue.message,
+        })),
+      }, { status: 400 });
+    }
+
+    const { label, startDate, endDate } = validationResult.data;
 
     // Check if label already exists
     const existing = await prisma.reportingPeriod.findUnique({
@@ -34,20 +48,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Create period with default metrics
-    const METRIC_DEFINITIONS = [
-      { number: 1, name: 'Critical systems security coverage', description: 'Percentage of critical systems with security coverage', unit: '%' },
-      { number: 2, name: 'Security incidents resolved', description: 'Number of security incidents resolved within SLA', unit: 'count' },
-      { number: 3, name: 'Vulnerability remediation time', description: 'Average time to remediate critical vulnerabilities', unit: 'hours' },
-      { number: 4, name: 'Security awareness training completion', description: 'Percentage of staff who completed security awareness training', unit: '%' },
-      { number: 5, name: 'Phishing simulation click rate', description: 'Percentage of staff who clicked on phishing simulation emails', unit: '%' },
-      { number: 6, name: 'Security control effectiveness', description: 'Percentage of security controls operating effectively', unit: '%' },
-      { number: 7, name: 'Mean time to detect (MTTD)', description: 'Average time to detect security incidents', unit: 'hours' },
-      { number: 8, name: 'Mean time to respond (MTTR)', description: 'Average time to respond to security incidents', unit: 'hours' },
-      { number: 9, name: 'Security policy compliance', description: 'Percentage of systems compliant with security policies', unit: '%' },
-      { number: 10, name: 'Third-party security assessments', description: 'Number of third-party security assessments completed', unit: 'count' },
-      { number: 11, name: 'Security budget utilization', description: 'Percentage of security budget utilized', unit: '%' },
-    ];
-
     const period = await prisma.reportingPeriod.create({
       data: {
         label,

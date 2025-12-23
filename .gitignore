@@ -27,6 +27,7 @@
 .vscode
 .idea
 /data
+prisma/data/
 *.log
 
 # debug

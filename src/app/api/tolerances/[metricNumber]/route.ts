@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { UpdateToleranceSchema } from '@/types';
+import { del, CacheKeys } from '@/lib/cache';
 
 export async function PATCH(
   request: NextRequest,
@@ -8,7 +10,26 @@ export async function PATCH(
   try {
     const { metricNumber } = await params;
     const metricNum = parseInt(metricNumber, 10);
-    const body = await request.json();
+
+    if (isNaN(metricNum) || metricNum < 1 || metricNum > 11) {
+      return NextResponse.json({ error: 'Invalid metric number' }, { status: 400 });
+    }
+
+    const rawBody = await request.json();
+
+    // Validate input with Zod
+    const validationResult = UpdateToleranceSchema.safeParse(rawBody);
+    if (!validationResult.success) {
+      return NextResponse.json({
+        error: 'Validation failed',
+        details: validationResult.error.issues.map((issue) => ({
+          field: issue.path.join('.'),
+          message: issue.message,
+        })),
+      }, { status: 400 });
+    }
+
+    const body = validationResult.data;
 
     const updated = await prisma.toleranceBand.update({
       where: { metricNumber: metricNum },
@@ -26,6 +47,10 @@ export async function PATCH(
         flatTolerance: body.flatTolerance !== undefined ? body.flatTolerance : undefined,
       },
     });
+
+    // Invalidate cache
+    await del(CacheKeys.toleranceBands);
+    await del(CacheKeys.toleranceBand(metricNum));
 
     return NextResponse.json(updated);
   } catch (error) {

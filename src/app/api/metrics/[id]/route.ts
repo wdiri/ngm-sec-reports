@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { UpdateMetricInput } from '@/types';
+import { UpdateMetricSchema } from '@/types';
 
 export async function PATCH(
   request: NextRequest,
@@ -8,7 +8,21 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const body: UpdateMetricInput = await request.json();
+    const rawBody = await request.json();
+
+    // Validate input with Zod
+    const validationResult = UpdateMetricSchema.safeParse(rawBody);
+    if (!validationResult.success) {
+      return NextResponse.json({
+        error: 'Validation failed',
+        details: validationResult.error.issues.map((issue) => ({
+          field: issue.path.join('.'),
+          message: issue.message,
+        })),
+      }, { status: 400 });
+    }
+
+    const body = validationResult.data;
 
     // Check if metric exists and period is not finalised
     const metric = await prisma.metric.findUnique({

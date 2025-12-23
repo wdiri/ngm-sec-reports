@@ -3,6 +3,8 @@
 import { Metric, ReportingPeriod, ToleranceBand } from '@prisma/client';
 import { useCallback, useRef, useState } from 'react';
 import { MetricFormField } from './MetricFormField';
+import { CONFIG } from '@/lib/domain/metrics';
+import toast from 'react-hot-toast';
 
 interface MetricsEntryFormProps {
   period: ReportingPeriod;
@@ -23,6 +25,7 @@ export function MetricsEntryForm({
 }: MetricsEntryFormProps) {
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
   const [isFinalising, setIsFinalising] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const debouncedSave = useCallback(() => {
@@ -32,10 +35,11 @@ export function MetricsEntryForm({
     saveTimeoutRef.current = setTimeout(async () => {
       try {
         await onSave();
+        setHasUnsavedChanges(false);
       } catch (err) {
         console.error('Auto-save failed:', err);
       }
-    }, 2000);
+    }, CONFIG.AUTO_SAVE_DEBOUNCE_MS);
   }, [onSave]);
 
   const handleMetricChange = useCallback(
@@ -57,6 +61,7 @@ export function MetricsEntryForm({
 
       if (Object.keys(newErrors).length === 0) {
         await onUpdate(metricId, updates);
+        setHasUnsavedChanges(true);
         debouncedSave();
       }
     },
@@ -72,9 +77,10 @@ export function MetricsEntryForm({
     try {
       await onSave();
       await onFinalise();
+      toast.success('Period finalised successfully');
     } catch (err) {
       console.error('Failed to finalise:', err);
-      alert('Failed to finalise period. Please try again.');
+      toast.error('Failed to finalise period. Please try again.');
     } finally {
       setIsFinalising(false);
     }
@@ -85,27 +91,7 @@ export function MetricsEntryForm({
   };
 
   return (
-    <div className="space-y-6 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500">Editing</p>
-          <h2 className="text-xl font-semibold text-gray-900">Period {period.label}</h2>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-            Auto-saves after you type
-          </span>
-          {period.isFinalised ? (
-            <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
-              Finalised
-            </span>
-          ) : (
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-              Draft
-            </span>
-          )}
-        </div>
-      </div>
+    <div className="space-y-6 rounded-2xl border border-ngm-border bg-white p-4 sm:p-6 shadow-sm">
 
       <div className="space-y-4">
         {metrics
@@ -118,19 +104,25 @@ export function MetricsEntryForm({
               tolerance={getToleranceForMetric(metric.metricNumber)}
               onChange={(updates) => handleMetricChange(metric.id, updates)}
               errors={errors[metric.id]}
+              disabled={false}
             />
           ))}
       </div>
 
-      <div className="fixed bottom-6 right-6 z-30">
-        <button
-          onClick={handleFinalise}
-          disabled={isFinalising}
-          className="inline-flex items-center rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-xl hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:opacity-50"
-        >
-          {isFinalising ? 'Finalising...' : 'Finalise period'}
-        </button>
-      </div>
+      {/* Finalize button - only show if not finalized OR if there are unsaved changes */}
+      {(!period.isFinalised || hasUnsavedChanges) && (
+        <div className="fixed bottom-6 right-6 z-30">
+          <button
+            onClick={handleFinalise}
+            disabled={isFinalising}
+            aria-label="Mark this reporting period as final"
+            aria-busy={isFinalising}
+            className="inline-flex items-center rounded-lg bg-ngm-cta px-4 py-2 text-sm font-semibold text-white shadow-xl hover:bg-ngm-cta-hover focus:outline-none focus:ring-2 focus:ring-ngm-accent disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isFinalising ? 'Finalising...' : hasUnsavedChanges ? 'Save & Finalise' : 'Finalise period'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

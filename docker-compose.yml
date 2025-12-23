@@ -1,6 +1,37 @@
-version: '3.8'
-
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ngm-sec-reports-postgres
+    environment:
+      POSTGRES_USER: ngm_user
+      POSTGRES_PASSWORD: ngm_password
+      POSTGRES_DB: ngm_sec_reports
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ngm_user -d ngm_sec_reports"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ngm-sec-reports-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
   app:
     build:
       context: .
@@ -8,13 +39,17 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # Persist SQLite database
-      - ./data:/app/data
       # Mount prisma directory for migrations
       - ./prisma:/app/prisma
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:./data/dev.db
+      - DATABASE_URL=postgresql://ngm_user:ngm_password@postgres:5432/ngm_sec_reports
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
@@ -22,3 +57,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  postgres_data:
+  redis_data:
+
+
+
+
+
+

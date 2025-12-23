@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { deleteSeedData, getDataStatus, seedSampleData } from '@/lib/sampleData';
+import { checkAdminAuth } from '@/lib/auth';
 
 export async function GET() {
   try {
@@ -12,7 +13,11 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  // Check admin authorization
+  const authError = checkAdminAuth(request);
+  if (authError) return authError;
+
   try {
     const status = await getDataStatus(prisma);
     if (status.periods > 0) {
@@ -28,7 +33,11 @@ export async function POST() {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  // Check admin authorization
+  const authError = checkAdminAuth(request);
+  if (authError) return authError;
+
   try {
     const cleared = await deleteSeedData(prisma);
     const status = await getDataStatus(prisma);

@@ -7,10 +7,12 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
-RUN npm ci
+    RUN npm ci --legacy-peer-deps
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
+# Install PostgreSQL client for health checks
+RUN apk add --no-cache postgresql-client
 WORKDIR /app
 
 # Copy dependencies from deps stage
@@ -26,6 +28,8 @@ RUN npm run build
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
+# Install PostgreSQL client for health checks
+RUN apk add --no-cache postgresql-client
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -82,7 +86,7 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-ENV DATABASE_URL="file:./data/dev.db"
+# DATABASE_URL will be set via docker-compose environment
 
 # Start script that runs migrations and seeds, then starts the app
 CMD ["/app/scripts/start.sh"]

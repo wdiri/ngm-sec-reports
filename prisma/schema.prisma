@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -66,8 +66,9 @@ model ToleranceBand {
 }
 
 model DashboardConfig {
-  id        String   @id @default("config")
-  headerText String  @default("Example dashboard – Presented at CORF / TRGC and input to ERC/BRC")
-  updatedAt DateTime @updatedAt
+  id          String   @id @default("config")
+  headerText  String   @default("Example dashboard – Presented at CORF / TRGC and input to ERC/BRC")
+  openaiApiKey String?  // Encrypted/stored OpenAI API key for AI insights
+  updatedAt   DateTime @updatedAt
 }
 

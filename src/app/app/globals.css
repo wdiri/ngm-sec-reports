@@ -1,12 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
+  /* NGM Group Official Brand Colors (from brandfetch.com/ngm-group.com.au) */
+  --color-primary: #5a2f92;          /* Eminence - Primary brand purple */
+  --color-secondary: #313131;        /* Mine Shaft - Dark neutral */
+  --color-accent: #8b5fbf;           /* Lighter purple for accents */
+  --color-cta: #5a2f92;              /* Purple CTA - matches primary */
+  --color-cta-hover: #4a2578;        /* Darker purple hover - WCAG AA compliant */
+  --color-bg: #fafafa;               /* Clean off-white */
+  --color-bg-alt: #f5f5f5;           /* Alt background */
+  --color-text: #313131;             /* Mine Shaft - Dark text */
+  --color-muted: #6b6b6b;            /* Muted gray text */
+  --color-border: #d4d4d4;           /* Light gray border */
+  --color-highlight: #e8dff5;        /* Light purple highlight */
+
+  /* Legacy mappings for compatibility */
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
   --card: #ffffff;
-  --border: #e2e8f0;
-  --accent: #5b21b6;
-  --accent-strong: #4338ca;
+  --border: var(--color-border);
 }
 
 @theme inline {
@@ -26,9 +38,34 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-geist-sans), "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
   min-height: 100vh;
 }
+
+/* NGM Group Custom Utilities */
+.bg-ngm-primary { background-color: var(--color-primary); }
+.bg-ngm-secondary { background-color: var(--color-secondary); }
+.bg-ngm-accent { background-color: var(--color-accent); }
+.bg-ngm-cta { background-color: var(--color-cta); }
+.bg-ngm-bg { background-color: var(--color-bg); }
+.bg-ngm-bg-alt { background-color: var(--color-bg-alt); }
+.bg-ngm-highlight { background-color: var(--color-highlight); }
+
+.text-ngm-primary { color: var(--color-primary); }
+.text-ngm-secondary { color: var(--color-secondary); }
+.text-ngm-accent { color: var(--color-accent); }
+.text-ngm-cta { color: var(--color-cta); }
+.text-ngm-text { color: var(--color-text); }
+.text-ngm-muted { color: var(--color-muted); }
+
+.border-ngm-border { border-color: var(--color-border); }
+.border-ngm-primary { border-color: var(--color-primary); }
+
+.hover\:bg-ngm-cta-hover:hover { background-color: var(--color-cta-hover); }
+.hover\:bg-ngm-primary-dark:hover { background-color: #4a2578; } /* Darker purple for hover */
+
+/* Ensure text on CTA buttons has proper contrast */
+.bg-ngm-cta, .bg-ngm-cta-hover { color: #ffffff; } /* White text on purple - 7.8:1 contrast (AAA) */

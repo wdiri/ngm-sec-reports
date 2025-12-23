@@ -18,7 +18,7 @@ export function MetricFormField({ metric, tolerance, onChange, errors, disabled 
     green: 'bg-green-50 text-green-800 border-green-200',
     amber: 'bg-amber-50 text-amber-800 border-amber-200',
     red: 'bg-red-50 text-red-800 border-red-200',
-    na: 'bg-gray-50 text-gray-700 border-gray-200',
+    na: 'bg-gray-50 text-gray-700 border-ngm-border',
   };
 
   const handleValueChange = (value: string) => {
@@ -31,29 +31,20 @@ export function MetricFormField({ metric, tolerance, onChange, errors, disabled 
   };
 
   return (
-    <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm space-y-4">
+    <div className="border border-ngm-border rounded-xl p-4 bg-white shadow-sm space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-xs uppercase tracking-wide text-gray-500">Metric {metric.metricNumber}</div>
-          <h3 className="font-semibold text-gray-900">{metric.name}</h3>
+          <h3 className="font-semibold text-gray-900">
+            <span className="text-xs uppercase tracking-wide text-gray-500">M{metric.metricNumber}</span>
+            {' - '}
+            {metric.name}
+          </h3>
           <p className="text-sm text-gray-600 mt-1">{metric.description}</p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${ragColors[ragStatus]}`}>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${ragColors[ragStatus]}`}>
             Status: {ragStatus.toUpperCase()}
           </span>
-          <button
-            type="button"
-            onClick={() => onChange({ hidden: !metric.hidden })}
-            disabled={disabled}
-            className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-              metric.hidden
-                ? 'bg-gray-100 text-gray-700 border-gray-300'
-                : 'bg-purple-50 text-purple-700 border-purple-200'
-            } disabled:opacity-60`}
-          >
-            {metric.hidden ? 'Hidden from report' : 'Hide in report'}
-          </button>
         </div>
       </div>
 
@@ -69,10 +60,11 @@ export function MetricFormField({ metric, tolerance, onChange, errors, disabled 
           min={0}
           max={metric.unit === '%' ? 100 : undefined}
           step={metric.unit === '%' ? 0.1 : 1}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+          aria-label={`Value for ${metric.name} in ${metric.unit}`}
+          aria-describedby={`metric-${metric.metricNumber}-description`}
+          className="w-full px-3 py-2 border border-ngm-border rounded-md focus:outline-none focus:ring-2 focus:ring-ngm-accent disabled:bg-gray-100"
         />
         {errors?.value && <p className="text-red-600 text-sm mt-1">{errors.value}</p>}
-        <p className="mt-1 text-xs text-gray-500">Use decimals for percentages to show precision.</p>
       </div>
 
       <div>
@@ -85,21 +77,39 @@ export function MetricFormField({ metric, tolerance, onChange, errors, disabled 
           disabled={disabled}
           placeholder="What, so what, now what..."
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+          className="w-full px-3 py-2 border border-ngm-border rounded-md focus:outline-none focus:ring-2 focus:ring-ngm-accent disabled:bg-gray-100"
         />
       </div>
 
-      <div>
-        <label className="flex items-center gap-2 mb-1">
-          <input
-            type="checkbox"
-            checked={metric.isNA}
-            onChange={(e) => handleNAChange(e.target.checked)}
-            disabled={disabled}
-            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-          />
-          <span className="text-sm font-medium text-gray-700">Not Applicable</span>
-        </label>
+      <div className="space-y-3">
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={metric.isNA}
+              onChange={(e) => handleNAChange(e.target.checked)}
+              disabled={disabled}
+              className="rounded border-ngm-border text-ngm-primary focus:ring-ngm-accent"
+              title="Mark as Not Applicable if this metric doesn't apply to this period. This will clear the value and require a reason."
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Not Applicable
+            </span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={metric.hidden || false}
+              onChange={(e) => onChange({ hidden: e.target.checked })}
+              disabled={disabled}
+              className="rounded border-ngm-border text-ngm-primary focus:ring-ngm-accent"
+              title={metric.hidden ? 'Show this metric in reports. Hidden metrics are excluded from dashboard views but still have values.' : 'Hide this metric from reports. Hidden metrics are excluded from dashboard views but still have values.'}
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Hide in report
+            </span>
+          </label>
+        </div>
         {metric.isNA && (
           <textarea
             value={metric.naReason ?? ''}
@@ -107,20 +117,15 @@ export function MetricFormField({ metric, tolerance, onChange, errors, disabled 
             disabled={disabled}
             placeholder="Reason for N/A..."
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 mt-1"
+            className="w-full px-3 py-2 border border-ngm-border rounded-md focus:outline-none focus:ring-2 focus:ring-ngm-accent disabled:bg-gray-100"
           />
         )}
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-gray-700">
-          Tolerance window
-          <div className="mt-1">
-            <ToleranceDisplay toleranceBand={tolerance} />
-          </div>
-        </div>
-        <div className="text-xs text-gray-500">
-          Status updates as soon as you change the value.
+      <div className="text-sm text-gray-700">
+        Tolerance window
+        <div className="mt-1">
+          <ToleranceDisplay toleranceBand={tolerance} />
         </div>
       </div>
     </div>

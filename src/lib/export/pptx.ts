@@ -14,36 +14,58 @@ export async function generatePPTX(
   const slide = pptx.addSlide();
 
   // Header
-  slide.addText(headerText, {
-    x: 0.5,
-    y: 0.3,
-    w: 9,
-    h: 0.4,
+  slide.addText(`Cyber Security Metrics - ${period.label}`, {
+    x: 0.2,
+    y: 0.05,
+    w: 9.6,
+    h: 0.3,
     fontSize: 14,
     bold: true,
     align: 'center',
-  });
-
-  slide.addText(`Period: ${period.label} | Generated: ${new Date().toLocaleDateString('en-AU')}`, {
-    x: 0.5,
-    y: 0.7,
-    w: 9,
-    h: 0.3,
-    fontSize: 10,
-    align: 'center',
-    color: '666666',
+    color: '1f2937',
   });
 
   // Table
   const sortedMetrics = [...metricsWithData].sort((a, b) => a.metricNumber - b.metricNumber);
 
+  const formatTolerance = (min: number | null, max: number | null, operator: string) => {
+    switch (operator) {
+      case '>=':
+        return min !== null ? `≥${min}` : '';
+      case '<=':
+        return max !== null ? `≤${max}` : '';
+      case '==':
+        return min !== null ? `=${min}` : '';
+      case 'range':
+        if (min !== null && max !== null) return `${min}-${max}`;
+        if (min !== null) return `≥${min}`;
+        if (max !== null) return `≤${max}`;
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  const formatMetricValue = (value: number, unit: string): string => {
+    if (unit === 'count') {
+      return value.toString();
+    }
+    if (unit === '%') {
+      return `${value.toFixed(1)} %`;
+    }
+    if (unit === 'hours') {
+      return `${value.toFixed(1)} H`;
+    }
+    return `${value.toFixed(1)} ${unit}`;
+  };
+
   const tableData: PptxGenJS.TableRow[] = [
     [
-      { text: 'Metric', options: { fill: { color: '7c3aed' }, color: 'FFFFFF', bold: true, fontSize: 10 } },
-      { text: 'Tolerance', options: { fill: { color: '7c3aed' }, color: 'FFFFFF', bold: true, fontSize: 10, align: 'center' } },
-      { text: period.label, options: { fill: { color: '7c3aed' }, color: 'FFFFFF', bold: true, fontSize: 10, align: 'center' } },
-      { text: 'Trend', options: { fill: { color: '7c3aed' }, color: 'FFFFFF', bold: true, fontSize: 10, align: 'center' } },
-      { text: 'Insight', options: { fill: { color: '7c3aed' }, color: 'FFFFFF', bold: true, fontSize: 10 } },
+      { text: 'Metric', options: { fill: { color: '7c3aed' }, color: 'FFFFFF', bold: true, fontSize: 9 } },
+      { text: 'Tolerance', options: { fill: { color: '7c3aed' }, color: 'FFFFFF', bold: true, fontSize: 9, align: 'center' } },
+      { text: 'Result', options: { fill: { color: '7c3aed' }, color: 'FFFFFF', bold: true, fontSize: 9, align: 'center' } },
+      { text: 'Trend', options: { fill: { color: '7c3aed' }, color: 'FFFFFF', bold: true, fontSize: 9, align: 'center' } },
+      { text: 'Insight', options: { fill: { color: '7c3aed' }, color: 'FFFFFF', bold: true, fontSize: 9 } },
     ],
   ];
 
@@ -56,57 +78,70 @@ export async function generatePPTX(
       na: '9ca3af',
     };
 
-    const formatTolerance = (min: number | null, max: number | null, operator: string) => {
-      switch (operator) {
-        case '>=':
-          return min !== null ? `>=${min}` : '';
-        case '<=':
-          return max !== null ? `<=${max}` : '';
-        case '==':
-          return min !== null ? `=${min}` : '';
-        case 'range':
-          if (min !== null && max !== null) return `${min}-${max}`;
-          if (min !== null) return `>=${min}`;
-          if (max !== null) return `<=${max}`;
-          return '';
-        default:
-          return '';
-      }
-    };
-
     const toleranceText = metric.tolerance
-      ? `G: ${formatTolerance(metric.tolerance.greenMin, metric.tolerance.greenMax, metric.tolerance.greenOperator)}\nA: ${formatTolerance(metric.tolerance.amberMin, metric.tolerance.amberMax, metric.tolerance.amberOperator)}\nR: ${formatTolerance(metric.tolerance.redMin, metric.tolerance.redMax, metric.tolerance.redOperator)}`
+      ? `🟢 ${formatTolerance(metric.tolerance.greenMin, metric.tolerance.greenMax, metric.tolerance.greenOperator)}\n🟡 ${formatTolerance(metric.tolerance.amberMin, metric.tolerance.amberMax, metric.tolerance.amberOperator)}\n🔴 ${formatTolerance(metric.tolerance.redMin, metric.tolerance.redMax, metric.tolerance.redOperator)}`
       : 'N/A';
 
-    const getTrendArrow = (trend: Trend | null) => {
-      if (!trend || trend.values.length < 2) return '-';
-      const arrows = { up: '↑', down: '↓', flat: '→' };
-      return arrows[trend.direction];
-    };
+  const getTrendDisplay = (trend: Trend | null, tolerance?: ToleranceBand | null) => {
+    if (!trend || trend.values.length < 2) return { text: '-', color: '9ca3af' };
+    
+    const firstValue = trend.values[0];
+    const lastValue = trend.values[trend.values.length - 1];
+    const changePct = firstValue !== 0 
+      ? ((lastValue - firstValue) / firstValue) * 100 
+      : (lastValue - firstValue) * 100;
+    
+    // If change is effectively zero (within 0.1%), treat as flat
+    const isEffectivelyFlat = Math.abs(changePct) < 0.1 || trend.direction === 'flat';
+    
+    if (isEffectivelyFlat) {
+      return { text: '→ 0.0%', color: '6b7280' };
+    }
+    
+    const isLowerBetter = tolerance?.isLowerBetter ?? false;
+    
+    let text = '';
+    let color = '9ca3af';
+    
+    if (trend.direction === 'up') {
+      text = isLowerBetter ? `↓ ${Math.abs(changePct).toFixed(1)}%` : `↑ +${changePct.toFixed(1)}%`;
+      color = '10b981';
+    } else if (trend.direction === 'down') {
+      text = isLowerBetter ? `↑ +${Math.abs(changePct).toFixed(1)}%` : `↓ ${changePct.toFixed(1)}%`;
+      color = isLowerBetter ? '10b981' : 'ef4444';
+    } else {
+      text = `→ ${changePct.toFixed(1)}%`;
+      color = '6b7280';
+    }
+    
+    return { text, color };
+  };
 
     const valueText = metric.isNA
       ? 'N/A'
       : metric.value !== null
-      ? `${metric.value}${metric.unit}`
+      ? formatMetricValue(metric.value, metric.unit)
       : '-';
 
     const rowBgColor = index % 2 === 0 ? 'FFFFFF' : 'F9FAFB';
 
+    const trendDisplay = getTrendDisplay(metric.trend ?? null, metric.tolerance ?? null);
+    
     tableData.push([
       {
-        text: `${metric.name}\n${metric.description}`,
+        text: `M${metric.metricNumber} - ${metric.name}\n${metric.description}`,
         options: {
           fill: { color: rowBgColor },
-          fontSize: 9,
-          valign: 'middle',
+          fontSize: 8,
+          valign: 'top',
         },
       },
       {
         text: toleranceText,
         options: {
           fill: { color: rowBgColor },
-          fontSize: 8,
-          align: 'center',
+          fontSize: 7,
+          align: 'left',
           valign: 'middle',
         },
       },
@@ -122,10 +157,12 @@ export async function generatePPTX(
         },
       },
       {
-        text: getTrendArrow(metric.trend ?? null),
+        text: trendDisplay.text,
         options: {
           fill: { color: rowBgColor },
-          fontSize: 16,
+          fontSize: 8,
+          bold: true,
+          color: trendDisplay.color,
           align: 'center',
           valign: 'middle',
         },
@@ -134,20 +171,23 @@ export async function generatePPTX(
         text: metric.insight || '-',
         options: {
           fill: { color: rowBgColor },
-          fontSize: 9,
-          valign: 'middle',
+          fontSize: 7,
+          valign: 'top',
         },
       },
     ]);
   });
 
   slide.addTable(tableData, {
-    x: 0.5,
-    y: 1.2,
-    w: 9,
-    colW: [3.6, 1.08, 0.9, 0.9, 2.52],
-    border: { type: 'solid', color: 'D1D5DB', pt: 1 },
-    fontSize: 9,
+    x: 0.2,
+    y: 0.4,
+    w: 9.6,
+    h: 7.0,
+    colW: [3.6, 1.4, 1.1, 1.0, 2.5],
+    border: { type: 'solid', color: 'E5E7EB', pt: 0.5 },
+    fontSize: 7,
+    align: 'left',
+    valign: 'top',
   });
 
   const buffer = await pptx.write({ outputType: 'nodebuffer' });
